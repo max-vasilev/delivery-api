@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"delivery-api/internal/model"
-	"delivery-api/internal/service"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"net/http"
@@ -11,11 +10,19 @@ import (
 	"time"
 )
 
-type OrderHandler struct {
-	service *service.OrderService
+type OrderService interface {
+	GetOrders(ctx context.Context) ([]model.Order, error)
+	GetOrderByID(ctx context.Context, id int) (model.Order, error)
+	CreateOrder(ctx context.Context, o model.Order) (model.Order, error)
+	UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error)
+	DeleteOrder(ctx context.Context, id int) error
 }
 
-func NewOrderHandler(service *service.OrderService) *OrderHandler {
+type OrderHandler struct {
+	service OrderService
+}
+
+func NewOrderHandler(service OrderService) *OrderHandler {
 	return &OrderHandler{service: service}
 }
 
