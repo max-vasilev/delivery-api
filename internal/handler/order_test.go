@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"delivery-api/internal/apperror"
+	"delivery-api/internal/apperror"
 	"delivery-api/internal/model"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"strings"
 	"testing"
 )
@@ -79,5 +81,22 @@ func TestCreateOrderCorrect(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusCreated {
 		t.Errorf("Получили: %d; Ожидали: %d", rec.Code, http.StatusCreated)
+	}
+}
+
+func TestCreateOrderUncorrectedBody(t *testing.T) {
+	healthHandler := NewHealthHandler(nil)
+	orderHandler := NewOrderHandler(&fakeService{})
+	router := NewRouter(orderHandler, healthHandler)
+	req := httptest.NewRequest("POST", "/orders", strings.NewReader(`{
+"address": "г. Ижевск, ул. Пушкинская, 10",
+"price": 50000,
+"items": [
+{"name": "Пицца", "quantity": 2, "price": 30000}
+]}`))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Получили: %d; Ожидали: %d", rec.Code, http.StatusBadRequest)
 	}
 }
