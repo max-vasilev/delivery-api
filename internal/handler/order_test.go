@@ -2,9 +2,11 @@ package handler
 
 import (
 	"context"
+	"delivery-api/internal/apperror"
 	"delivery-api/internal/model"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -48,5 +50,34 @@ func TestGetOrderByIDInvalidID(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("Получили: %d; Ожидали: %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
+func TestGetOrderByIDNotFound(t *testing.T) {
+	healthHandler := NewHealthHandler(nil)
+	orderHandler := NewOrderHandler(&fakeService{err: apperror.ErrOrderNotFound})
+	router := NewRouter(orderHandler, healthHandler)
+	req := httptest.NewRequest("GET", "/orders/999", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("Получили: %d; Ожидали: %d", rec.Code, http.StatusNotFound)
+	}
+}
+
+func TestCreateOrderCorrect(t *testing.T) {
+	healthHandler := NewHealthHandler(nil)
+	orderHandler := NewOrderHandler(&fakeService{})
+	router := NewRouter(orderHandler, healthHandler)
+	req := httptest.NewRequest("POST", "/orders", strings.NewReader(`{
+"address": "г. Ижевск, ул. Пушкинская, 10",
+"price": 50000,
+"items": [
+{"name": "Пицца", "quantity": 2, "price": 30000}
+]}`))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Errorf("Получили: %d; Ожидали: %d", rec.Code, http.StatusCreated)
 	}
 }
