@@ -3,29 +3,28 @@ package main
 import (
 	"context"
 	"database/sql"
+	"delivery-api/internal/config"
 	"delivery-api/internal/handler"
 	"delivery-api/internal/repository"
 	"delivery-api/internal/service"
 	"errors"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
-	err := godotenv.Load()
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(err)
 	}
 
-	dsn := os.Getenv("DATABASE_URL")
-
-	db, err := sql.Open("pgx", dsn)
+	db, err := sql.Open("pgx", cfg.DB.URL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,17 +43,17 @@ func main() {
 
 	orderRepo := repository.NewOrderRepository(db)
 	orderService := service.NewOrderService(orderRepo)
-	orderHandler := handler.NewOrderHandler(orderService)
+	orderHandler := handler.NewOrderHandler(orderService, cfg.Server.RequestTimeout)
 	healthHandler := handler.NewHealthHandler(db)
 
 	router := handler.NewRouter(orderHandler, healthHandler)
 
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         cfg.Server.Addr(),
 		Handler:      router,
-		ReadTimeout:  time.Second * 15,
-		WriteTimeout: time.Second * 15,
-		IdleTimeout:  time.Second * 60,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
 	errCh := make(chan error, 1)
@@ -63,7 +62,7 @@ func main() {
 			errCh <- err
 		}
 	}()
-	log.Println("Starting server on :8080")
+	log.Printf("Starting server on %s", cfg.Server.Addr())
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
