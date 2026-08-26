@@ -3,11 +3,9 @@ package handler
 import (
 	"context"
 	"delivery-api/internal/apperror"
-	"delivery-api/internal/apperror"
 	"delivery-api/internal/model"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"strings"
 	"testing"
 )
