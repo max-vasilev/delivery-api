@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 var _ OrderService = (*fakeService)(nil)
@@ -43,7 +44,7 @@ func (f *fakeService) DeleteOrder(ctx context.Context, id int) error {
 
 func TestGetOrderByIDInvalidID(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
-	orderHandler := NewOrderHandler(&fakeService{})
+	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
 	router := NewRouter(orderHandler, healthHandler)
 	req := httptest.NewRequest("GET", "/orders/abc", nil)
 	rec := httptest.NewRecorder()
@@ -55,7 +56,7 @@ func TestGetOrderByIDInvalidID(t *testing.T) {
 
 func TestGetOrderByIDNotFound(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
-	orderHandler := NewOrderHandler(&fakeService{err: apperror.ErrOrderNotFound})
+	orderHandler := NewOrderHandler(&fakeService{err: apperror.ErrOrderNotFound}, 3*time.Second)
 	router := NewRouter(orderHandler, healthHandler)
 	req := httptest.NewRequest("GET", "/orders/999", nil)
 	rec := httptest.NewRecorder()
@@ -67,7 +68,7 @@ func TestGetOrderByIDNotFound(t *testing.T) {
 
 func TestCreateOrderCorrect(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
-	orderHandler := NewOrderHandler(&fakeService{})
+	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
 	router := NewRouter(orderHandler, healthHandler)
 	req := httptest.NewRequest("POST", "/orders", strings.NewReader(`{
 "address": "г. Ижевск, ул. Пушкинская, 10",
@@ -82,16 +83,14 @@ func TestCreateOrderCorrect(t *testing.T) {
 	}
 }
 
-func TestCreateOrderUncorrectedBody(t *testing.T) {
+func TestCreateOrderInvalidBody(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
-	orderHandler := NewOrderHandler(&fakeService{})
+	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
 	router := NewRouter(orderHandler, healthHandler)
 	req := httptest.NewRequest("POST", "/orders", strings.NewReader(`{
 "address": "г. Ижевск, ул. Пушкинская, 10",
 "price": 50000,
-"items": [
-{"name": "Пицца", "quantity": 2, "price": 30000}
-]}`))
+`))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {

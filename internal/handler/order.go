@@ -20,14 +20,15 @@ type OrderService interface {
 
 type OrderHandler struct {
 	service OrderService
+	timeout time.Duration
 }
 
-func NewOrderHandler(service OrderService) *OrderHandler {
-	return &OrderHandler{service: service}
+func NewOrderHandler(service OrderService, timeout time.Duration) *OrderHandler {
+	return &OrderHandler{service: service, timeout: timeout}
 }
 
 func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	ctx, cancel := context.WithTimeout(r.Context(), h.timeout)
 	defer cancel()
 
 	orders, err := h.service.GetOrders(ctx)
@@ -40,7 +41,7 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) GetOrderByID(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	ctx, cancel := context.WithTimeout(r.Context(), h.timeout)
 	defer cancel()
 
 	id := chi.URLParam(r, "id")
@@ -60,7 +61,7 @@ func (h *OrderHandler) GetOrderByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	ctx, cancel := context.WithTimeout(r.Context(), h.timeout)
 	defer cancel()
 
 	var o model.Order
@@ -79,7 +80,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	ctx, cancel := context.WithTimeout(r.Context(), h.timeout)
 	defer cancel()
 
 	id := chi.URLParam(r, "id")
@@ -106,7 +107,7 @@ func (h *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*3)
+	ctx, cancel := context.WithTimeout(r.Context(), h.timeout)
 	defer cancel()
 
 	id := chi.URLParam(r, "id")
