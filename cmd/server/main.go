@@ -8,7 +8,7 @@ import (
 	"delivery-api/internal/repository"
 	"delivery-api/internal/service"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,22 +19,29 @@ import (
 )
 
 func main() {
+	jsonHandler := slog.NewJSONHandler(os.Stdout, nil)
+	l := slog.New(jsonHandler)
+	slog.SetDefault(l)
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		l.Error("config load failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	db, err := sql.Open("pgx", cfg.DB.URL)
 	if err != nil {
-		log.Fatal(err)
+		l.Error("database open failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	defer func() { _ = db.Close() }()
 	err = db.Ping()
 	if err != nil {
-		log.Fatal(err)
+		l.Error("database ping failed", slog.Any("error", err))
+		os.Exit(1)
 	}
-	log.Println("Success db connection")
+	l.Info("database connected")
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
@@ -62,24 +69,24 @@ func main() {
 			errCh <- err
 		}
 	}()
-	log.Printf("Starting server on %s", cfg.Server.Addr())
+	l.Info("starting server", slog.String("addr", cfg.Server.Addr()))
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
 	case err := <-errCh:
-		log.Println(err)
+		l.Error("server error", slog.Any("error", err))
 	case <-quit:
-		log.Println("Останавливаю сервер...")
+		l.Info("shutting down server")
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 
 		if err := server.Shutdown(ctx); err != nil {
-			log.Println("Сервер перестал ждать и был остановлен")
+			l.Error("shutdown timeout exceeded", slog.Any("error", err))
 		} else {
-			log.Println("Сервер успешно остановлен")
+			l.Info("server stopped")
 		}
 	}
 }
