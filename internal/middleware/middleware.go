@@ -6,8 +6,19 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"time"
 )
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
 
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -19,17 +30,28 @@ func Auth(next http.Handler) http.Handler {
 
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := logger.FromContext(r.Context())
 		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
+		rw := &responseWriter{
+			ResponseWriter: w,
+			status:         http.StatusOK,
+		}
+		next.ServeHTTP(rw, r)
+		l.Info(
+			"request completed",
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", rw.status),
+			slog.Duration("duration", time.Since(start)))
 	})
 }
 
 func Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := logger.FromContext(r.Context())
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("паника: %v", rec)
+				l.Error("panic", slog.Any("panic", rec), slog.String("stack", string(debug.Stack())))
 				http.Error(w, "internal error", http.StatusInternalServerError)
 			}
 		}()
