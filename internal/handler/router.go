@@ -3,10 +3,14 @@ package handler
 import (
 	"delivery-api/internal/middleware"
 	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+	"log/slog"
 )
 
-func NewRouter(orderHandler *OrderHandler, healthHandler *HealthHandler) chi.Router {
+func NewRouter(orderHandler *OrderHandler, healthHandler *HealthHandler, l *slog.Logger) chi.Router {
 	r := chi.NewRouter()
+	r.Use(chimw.RequestID)
+	r.Use(middleware.RequestID(l))
 	r.Use(middleware.Logging)
 	r.Use(middleware.Recover)
 	r.Get("/health/liveness", healthHandler.Liveness)

@@ -53,7 +53,7 @@ func main() {
 	orderHandler := handler.NewOrderHandler(orderService, cfg.Server.RequestTimeout)
 	healthHandler := handler.NewHealthHandler(db)
 
-	router := handler.NewRouter(orderHandler, healthHandler)
+	router := handler.NewRouter(orderHandler, healthHandler, l)
 
 	server := &http.Server{
 		Addr:         cfg.Server.Addr(),
