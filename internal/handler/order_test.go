@@ -4,6 +4,8 @@ import (
 	"context"
 	"delivery-api/internal/apperror"
 	"delivery-api/internal/model"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -45,7 +47,8 @@ func (f *fakeService) DeleteOrder(ctx context.Context, id int) error {
 func TestGetOrderByIDInvalidID(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
 	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
-	router := NewRouter(orderHandler, healthHandler)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
+	router := NewRouter(orderHandler, healthHandler, l)
 	req := httptest.NewRequest("GET", "/orders/abc", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -57,7 +60,8 @@ func TestGetOrderByIDInvalidID(t *testing.T) {
 func TestGetOrderByIDNotFound(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
 	orderHandler := NewOrderHandler(&fakeService{err: apperror.ErrOrderNotFound}, 3*time.Second)
-	router := NewRouter(orderHandler, healthHandler)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
+	router := NewRouter(orderHandler, healthHandler, l)
 	req := httptest.NewRequest("GET", "/orders/999", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -69,7 +73,8 @@ func TestGetOrderByIDNotFound(t *testing.T) {
 func TestCreateOrderCorrect(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
 	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
-	router := NewRouter(orderHandler, healthHandler)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
+	router := NewRouter(orderHandler, healthHandler, l)
 	req := httptest.NewRequest("POST", "/orders", strings.NewReader(`{
 "address": "г. Ижевск, ул. Пушкинская, 10",
 "price": 50000,
@@ -86,7 +91,8 @@ func TestCreateOrderCorrect(t *testing.T) {
 func TestCreateOrderInvalidBody(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
 	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
-	router := NewRouter(orderHandler, healthHandler)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
+	router := NewRouter(orderHandler, healthHandler, l)
 	req := httptest.NewRequest("POST", "/orders", strings.NewReader(`{
 "address": "г. Ижевск, ул. Пушкинская, 10",
 "price": 50000,
