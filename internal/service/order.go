@@ -7,8 +7,13 @@ import (
 	"fmt"
 )
 
+const (
+	defaultLimit = 20
+	maxLimit     = 100
+)
+
 type OrderRepository interface {
-	GetOrders(ctx context.Context) ([]model.Order, error)
+	GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error)
 	GetOrderByID(ctx context.Context, id int) (model.Order, error)
 	CreateOrder(ctx context.Context, o model.Order) (model.Order, error)
 	UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error)
@@ -21,6 +26,19 @@ type OrderService struct {
 
 func NewOrderService(repo OrderRepository) *OrderService {
 	return &OrderService{repo: repo}
+}
+
+func normalizePagination(limit, offset int) (int, int) {
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
 }
 
 func validateOrder(o model.Order) error {
@@ -52,8 +70,9 @@ func validateOrder(o model.Order) error {
 	return &apperror.ValidationError{Messages: messages}
 }
 
-func (s *OrderService) GetOrders(ctx context.Context) ([]model.Order, error) {
-	return s.repo.GetOrders(ctx)
+func (s *OrderService) GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error) {
+	limit, offset = normalizePagination(limit, offset)
+	return s.repo.GetOrders(ctx, limit, offset)
 }
 
 func (s *OrderService) GetOrderByID(ctx context.Context, id int) (model.Order, error) {

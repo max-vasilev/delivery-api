@@ -17,8 +17,8 @@ func NewOrderRepository(db *sql.DB) *OrderRepository {
 	return &OrderRepository{db: db}
 }
 
-func (r *OrderRepository) GetOrders(ctx context.Context) ([]model.Order, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, address, price, status, created_at FROM orders`)
+func (r *OrderRepository) GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT id, address, price, status, created_at FROM orders ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("GetOrders query: %w", err)
 	}

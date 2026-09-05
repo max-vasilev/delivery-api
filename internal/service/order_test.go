@@ -17,7 +17,7 @@ type fakeRepo struct {
 	createModel model.Order
 }
 
-func (f *fakeRepo) GetOrders(ctx context.Context) ([]model.Order, error) {
+func (f *fakeRepo) GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error) {
 	return nil, f.err
 }
 
