@@ -22,7 +22,7 @@ type fakeService struct {
 	createModel model.Order
 }
 
-func (f *fakeService) GetOrders(ctx context.Context) ([]model.Order, error) {
+func (f *fakeService) GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error) {
 	return nil, f.err
 }
 

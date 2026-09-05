@@ -11,7 +11,7 @@ import (
 )
 
 type OrderService interface {
-	GetOrders(ctx context.Context) ([]model.Order, error)
+	GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error)
 	GetOrderByID(ctx context.Context, id int) (model.Order, error)
 	CreateOrder(ctx context.Context, o model.Order) (model.Order, error)
 	UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error)
@@ -27,11 +27,35 @@ func NewOrderHandler(service OrderService, timeout time.Duration) *OrderHandler 
 	return &OrderHandler{service: service, timeout: timeout}
 }
 
+func queryInt(r *http.Request, key string) (int, error) {
+	str := r.URL.Query().Get(key)
+	if str == "" {
+		return 0, nil
+	}
+	num, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, err
+	}
+	return num, nil
+}
+
 func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), h.timeout)
 	defer cancel()
 
-	orders, err := h.service.GetOrders(ctx)
+	limit, err := queryInt(r, "limit")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid limit")
+		return
+	}
+
+	offset, err := queryInt(r, "offset")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid offset")
+		return
+	}
+
+	orders, err := h.service.GetOrders(ctx, limit, offset)
 	if err != nil {
 		handleError(w, err)
 		return
