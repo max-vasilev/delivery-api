@@ -44,6 +44,19 @@ func (f *fakeService) DeleteOrder(ctx context.Context, id int) error {
 	return f.err
 }
 
+func TestOrdersInvalidLimit(t *testing.T) {
+	healthHandler := NewHealthHandler(nil)
+	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
+	l := slog.New(slog.NewTextHandler(io.Discard, nil))
+	router := NewRouter(orderHandler, healthHandler, l)
+	req := httptest.NewRequest("GET", "/orders?limit=abc", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Получили: %d; Ожидали: %d", rec.Code, http.StatusBadRequest)
+	}
+}
+
 func TestGetOrderByIDInvalidID(t *testing.T) {
 	healthHandler := NewHealthHandler(nil)
 	orderHandler := NewOrderHandler(&fakeService{}, 3*time.Second)
