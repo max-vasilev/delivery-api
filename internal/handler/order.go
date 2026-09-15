@@ -4,18 +4,20 @@ import (
 	"context"
 	"delivery-api/internal/model"
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
 	"time"
+	"uuid"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type OrderService interface {
 	GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error)
-	GetOrderByID(ctx context.Context, id int) (model.Order, error)
+	GetOrderByID(ctx context.Context, id uuid.UUID) (model.Order, error)
 	CreateOrder(ctx context.Context, o model.Order) (model.Order, error)
-	UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error)
-	DeleteOrder(ctx context.Context, id int) error
+	UpdateOrder(ctx context.Context, id uuid.UUID, o model.Order) (model.Order, error)
+	DeleteOrder(ctx context.Context, id uuid.UUID) error
 }
 
 type OrderHandler struct {
@@ -69,13 +71,13 @@ func (h *OrderHandler) GetOrderByID(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	id := chi.URLParam(r, "id")
-	intID, err := strconv.Atoi(id)
+	uuidID, err := uuid.Parse(id)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid order id")
 		return
 	}
 
-	order, err := h.service.GetOrderByID(ctx, intID)
+	order, err := h.service.GetOrderByID(ctx, uuidID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -108,7 +110,7 @@ func (h *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	id := chi.URLParam(r, "id")
-	intID, err := strconv.Atoi(id)
+	uuidID, err := uuid.Parse(id)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid order id")
 		return
@@ -121,7 +123,7 @@ func (h *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.service.UpdateOrder(ctx, intID, o)
+	order, err := h.service.UpdateOrder(ctx, uuidID, o)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -135,13 +137,13 @@ func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	id := chi.URLParam(r, "id")
-	intID, err := strconv.Atoi(id)
+	uuidID, err := uuid.Parse(id)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid order id")
 		return
 	}
 
-	err = h.service.DeleteOrder(ctx, intID)
+	err = h.service.DeleteOrder(ctx, uuidID)
 	if err != nil {
 		handleError(w, err)
 		return

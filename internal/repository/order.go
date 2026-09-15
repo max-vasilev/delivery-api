@@ -7,6 +7,7 @@ import (
 	"delivery-api/internal/model"
 	"errors"
 	"fmt"
+	"uuid"
 )
 
 type OrderRepository struct {
@@ -39,7 +40,7 @@ func (r *OrderRepository) GetOrders(ctx context.Context, limit, offset int) ([]m
 	return orders, nil
 }
 
-func (r *OrderRepository) GetOrderByID(ctx context.Context, id int) (model.Order, error) {
+func (r *OrderRepository) GetOrderByID(ctx context.Context, id uuid.UUID) (model.Order, error) {
 	var o model.Order
 	row := r.db.QueryRowContext(ctx, `SELECT id, address, price, status, created_at FROM orders WHERE id = $1`, id)
 	err := row.Scan(&o.ID, &o.Address, &o.Price, &o.Status, &o.CreatedAt)
@@ -81,17 +82,16 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, o model.Order) (model
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	row := tx.QueryRowContext(ctx, `INSERT INTO orders (address, price) VALUES ($1, $2) RETURNING id, status, created_at`, o.Address, o.Price)
-	err = row.Scan(&o.ID, &o.Status, &o.CreatedAt)
+	row := tx.QueryRowContext(ctx, `INSERT INTO orders (id, address, price) VALUES ($1, $2, $3) RETURNING status, created_at`, o.ID, o.Address, o.Price)
+	err = row.Scan(&o.Status, &o.CreatedAt)
 	if err != nil {
 		return model.Order{}, fmt.Errorf("CreateOrder scan: %w", err)
 	}
 
 	for i := range o.Items {
-		row := tx.QueryRowContext(ctx, `INSERT INTO order_items(order_id, name, quantity, price) VALUES ($1, $2, $3, $4) RETURNING id, order_id`, o.ID, o.Items[i].Name, o.Items[i].Quantity, o.Items[i].Price)
-		err = row.Scan(&o.Items[i].ID, &o.Items[i].OrderID)
+		_, err = tx.ExecContext(ctx, `INSERT INTO order_items(id, order_id, name, quantity, price) VALUES ($1, $2, $3, $4, $5)`, o.Items[i].ID, o.ID, o.Items[i].Name, o.Items[i].Quantity, o.Items[i].Price)
 		if err != nil {
-			return model.Order{}, fmt.Errorf("CreateOrder items scan: %w", err)
+			return model.Order{}, fmt.Errorf("CreateOrder items exec: %w", err)
 		}
 	}
 
@@ -103,7 +103,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, o model.Order) (model
 	return o, nil
 }
 
-func (r *OrderRepository) UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error) {
+func (r *OrderRepository) UpdateOrder(ctx context.Context, id uuid.UUID, o model.Order) (model.Order, error) {
 	row := r.db.QueryRowContext(ctx, `UPDATE orders SET address = $1, price = $2 WHERE id = $3 RETURNING id, address, price, status, created_at`, o.Address, o.Price, id)
 	err := row.Scan(&o.ID, &o.Address, &o.Price, &o.Status, &o.CreatedAt)
 	if err != nil {
@@ -115,7 +115,7 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, id int, o model.Order
 	return o, nil
 }
 
-func (r *OrderRepository) DeleteOrder(ctx context.Context, id int) error {
+func (r *OrderRepository) DeleteOrder(ctx context.Context, id uuid.UUID) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("DeleteOrder exec: %w", err)

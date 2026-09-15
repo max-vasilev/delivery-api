@@ -5,6 +5,7 @@ import (
 	"delivery-api/internal/apperror"
 	"delivery-api/internal/model"
 	"fmt"
+	"uuid"
 )
 
 const (
@@ -14,10 +15,10 @@ const (
 
 type OrderRepository interface {
 	GetOrders(ctx context.Context, limit, offset int) ([]model.Order, error)
-	GetOrderByID(ctx context.Context, id int) (model.Order, error)
+	GetOrderByID(ctx context.Context, id uuid.UUID) (model.Order, error)
 	CreateOrder(ctx context.Context, o model.Order) (model.Order, error)
-	UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error)
-	DeleteOrder(ctx context.Context, id int) error
+	UpdateOrder(ctx context.Context, id uuid.UUID, o model.Order) (model.Order, error)
+	DeleteOrder(ctx context.Context, id uuid.UUID) error
 }
 
 type OrderService struct {
@@ -75,7 +76,7 @@ func (s *OrderService) GetOrders(ctx context.Context, limit, offset int) ([]mode
 	return s.repo.GetOrders(ctx, limit, offset)
 }
 
-func (s *OrderService) GetOrderByID(ctx context.Context, id int) (model.Order, error) {
+func (s *OrderService) GetOrderByID(ctx context.Context, id uuid.UUID) (model.Order, error) {
 	return s.repo.GetOrderByID(ctx, id)
 }
 
@@ -84,10 +85,16 @@ func (s *OrderService) CreateOrder(ctx context.Context, o model.Order) (model.Or
 	if err != nil {
 		return model.Order{}, err
 	}
+
+	o.ID = uuid.NewV7()
+
+	for i := range o.Items {
+		o.Items[i].ID = uuid.NewV7()
+	}
 	return s.repo.CreateOrder(ctx, o)
 }
 
-func (s *OrderService) UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error) {
+func (s *OrderService) UpdateOrder(ctx context.Context, id uuid.UUID, o model.Order) (model.Order, error) {
 	err := validateOrder(o)
 	if err != nil {
 		return model.Order{}, err
@@ -95,6 +102,6 @@ func (s *OrderService) UpdateOrder(ctx context.Context, id int, o model.Order) (
 	return s.repo.UpdateOrder(ctx, id, o)
 }
 
-func (s *OrderService) DeleteOrder(ctx context.Context, id int) error {
+func (s *OrderService) DeleteOrder(ctx context.Context, id uuid.UUID) error {
 	return s.repo.DeleteOrder(ctx, id)
 }

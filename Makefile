@@ -1,6 +1,8 @@
 -include .env
 export
 
+.PHONY: run migrate-up migrate-down db-up db-down db-shell fmt lint vet check test
+
 run:
 	go run ./cmd/server/
 migrate-up:
@@ -21,4 +23,7 @@ lint:
 	golangci-lint run
 vet:
 	go vet ./...
-check: fmt vet lint
+test:
+	go test ./...
+check: fmt vet lint test
+

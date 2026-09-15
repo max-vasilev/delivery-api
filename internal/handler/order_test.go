@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 )
 
 var _ OrderService = (*fakeService)(nil)
@@ -26,7 +27,7 @@ func (f *fakeService) GetOrders(ctx context.Context, limit, offset int) ([]model
 	return nil, f.err
 }
 
-func (f *fakeService) GetOrderByID(ctx context.Context, id int) (model.Order, error) {
+func (f *fakeService) GetOrderByID(ctx context.Context, id uuid.UUID) (model.Order, error) {
 	return f.order, f.err
 }
 
@@ -36,11 +37,11 @@ func (f *fakeService) CreateOrder(ctx context.Context, o model.Order) (model.Ord
 	return f.order, f.err
 }
 
-func (f *fakeService) UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error) {
+func (f *fakeService) UpdateOrder(ctx context.Context, id uuid.UUID, o model.Order) (model.Order, error) {
 	return f.order, f.err
 }
 
-func (f *fakeService) DeleteOrder(ctx context.Context, id int) error {
+func (f *fakeService) DeleteOrder(ctx context.Context, id uuid.UUID) error {
 	return f.err
 }
 
@@ -75,7 +76,7 @@ func TestGetOrderByIDNotFound(t *testing.T) {
 	orderHandler := NewOrderHandler(&fakeService{err: apperror.ErrOrderNotFound}, 3*time.Second)
 	l := slog.New(slog.NewTextHandler(io.Discard, nil))
 	router := NewRouter(orderHandler, healthHandler, l)
-	req := httptest.NewRequest("GET", "/orders/999", nil)
+	req := httptest.NewRequest("GET", "/orders/550e8400-e29b-41d4-a716-446655440000", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {

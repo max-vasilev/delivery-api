@@ -4,6 +4,7 @@ import (
 	"context"
 	"delivery-api/internal/model"
 	"testing"
+	"uuid"
 )
 
 var _ OrderRepository = (*fakeRepo)(nil)
@@ -21,7 +22,7 @@ func (f *fakeRepo) GetOrders(ctx context.Context, limit, offset int) ([]model.Or
 	return nil, f.err
 }
 
-func (f *fakeRepo) GetOrderByID(ctx context.Context, id int) (model.Order, error) {
+func (f *fakeRepo) GetOrderByID(ctx context.Context, id uuid.UUID) (model.Order, error) {
 	return f.order, f.err
 }
 
@@ -31,11 +32,11 @@ func (f *fakeRepo) CreateOrder(ctx context.Context, o model.Order) (model.Order,
 	return f.order, f.err
 }
 
-func (f *fakeRepo) UpdateOrder(ctx context.Context, id int, o model.Order) (model.Order, error) {
+func (f *fakeRepo) UpdateOrder(ctx context.Context, id uuid.UUID, o model.Order) (model.Order, error) {
 	return f.order, f.err
 }
 
-func (f *fakeRepo) DeleteOrder(ctx context.Context, id int) error {
+func (f *fakeRepo) DeleteOrder(ctx context.Context, id uuid.UUID) error {
 	return f.err
 }
 
@@ -119,5 +120,13 @@ func TestValidCreateOrder(t *testing.T) {
 	}
 	if repo.createModel.Address != address {
 		t.Errorf("Пришло:%q; Ожидалось:%q", repo.createModel.Address, address)
+	}
+	if repo.createModel.ID == uuid.Nil() {
+		t.Errorf("ID заказа не был сгенерирован")
+	}
+	for _, item := range repo.createModel.Items {
+		if item.ID == uuid.Nil() {
+			t.Errorf("ID позиции не был сгенерирован")
+		}
 	}
 }

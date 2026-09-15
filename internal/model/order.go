@@ -1,9 +1,12 @@
 package model
 
-import "time"
+import (
+	"time"
+	"uuid"
+)
 
 type Order struct {
-	ID        int         `json:"id"`
+	ID        uuid.UUID   `json:"id"`
 	Address   string      `json:"address"`
 	Price     int64       `json:"price"`
 	Status    string      `json:"status"`
@@ -12,9 +15,9 @@ type Order struct {
 }
 
 type OrderItem struct {
-	ID       int    `json:"id"`
-	OrderID  int    `json:"order_id"`
-	Name     string `json:"name"`
-	Quantity int    `json:"quantity"`
-	Price    int64  `json:"price"`
+	ID       uuid.UUID `json:"id"`
+	OrderID  int       `json:"order_id"`
+	Name     string    `json:"name"`
+	Quantity int       `json:"quantity"`
+	Price    int64     `json:"price"`
 }
